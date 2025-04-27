@@ -5,24 +5,29 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Método não permitido. Use POST.' });
   }
 
+  let body = '';
+
+  try {
+    // Captura manual dos dados enviados na requisição
+    for await (const chunk of req) {
+      body += chunk;
+    }
+
+    body = JSON.parse(body); // Transforma em objeto
+  } catch (error) {
+    console.error('Erro ao ler/parsing do body:', error);
+    return res.status(400).json({ message: 'Erro ao interpretar o corpo da requisição.', error: error.message });
+  }
+
   try {
     const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
-    const scopes = ['https://www.googleapis.com/auth/spreadsheets'];
 
     const auth = new google.auth.GoogleAuth({
       credentials: serviceAccount,
-      scopes,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
     const sheets = google.sheets({ version: 'v4', auth });
-
-    let body = {};
-
-    try {
-      body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    } catch (error) {
-      return res.status(400).json({ message: "JSON inválido no corpo da requisição." });
-    }
 
     const { data } = body;
 
@@ -34,7 +39,7 @@ export default async function handler(req, res) {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: 'A:E', // Adaptável ao número de colunas enviadas
+      range: 'A:E',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [data],
