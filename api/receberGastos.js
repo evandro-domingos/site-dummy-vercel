@@ -13,10 +13,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'JSON inválido no corpo da requisição.' });
   }
 
-  const { data } = body;
+  const { itens } = body;
 
-  if (!data || !Array.isArray(data)) {
-    return res.status(400).json({ message: 'Formato de dados inválido. Esperado um array.' });
+  if (!itens || !Array.isArray(itens)) {
+    return res.status(400).json({ message: 'Formato de dados inválido. Esperado um array de itens.' });
   }
 
   try {
@@ -31,16 +31,27 @@ export default async function handler(req, res) {
 
     const spreadsheetId = process.env.SPREADSHEET_ID;
 
+    // Montar os valores para inserir
+    const values = itens.map(item => [
+      item.data,
+      item.produto,
+      item.quantidade,
+      item.valor,
+      item.formaPagamento,
+      item.onde
+    ]);
+
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: 'A:E',
+      range: 'A:F',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
-        values: [data],
+        values: values,
       },
     });
 
-    return res.status(200).json({ message: 'Gasto registrado com sucesso no Google Sheets!' });
+    return res.status(200).json({ message: 'Gastos registrados com sucesso no Google Sheets!' });
+
   } catch (error) {
     console.error('Erro na função serverless:', error);
     return res.status(500).json({ message: 'Erro interno no servidor.', error: error.message });
