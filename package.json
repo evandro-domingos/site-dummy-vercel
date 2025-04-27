@@ -1,0 +1,12 @@
+{
+  "name": "site-dummy-vercel",
+  "version": "1.0.0",
+  "description": "Projeto controle de gastos Vercel + Google Sheets",
+  "main": "index.js",
+  "scripts": {
+    "start": "node api/receberGastos.js"
+  },
+  "dependencies": {
+    "googleapis": "^118.0.0"
+  }
+}
