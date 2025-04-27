@@ -6,37 +6,38 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Parse do corpo da requisição
+    const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+    const scopes = ['https://www.googleapis.com/auth/spreadsheets'];
+
+    const auth = new google.auth.GoogleAuth({
+      credentials: serviceAccount,
+      scopes,
+    });
+
+    const sheets = google.sheets({ version: 'v4', auth });
+
     let body = {};
+
     try {
       body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     } catch (error) {
       return res.status(400).json({ message: "JSON inválido no corpo da requisição." });
     }
 
-    // Carrega as credenciais do serviço do Google
-    const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+    const { data } = body;
 
-    const scopes = ['https://www.googleapis.com/auth/spreadsheets'];
-    const auth = new google.auth.GoogleAuth({
-      credentials: serviceAccount,
-      scopes: scopes,
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    if (!body.data) {
-      return res.status(400).json({ message: 'Dados não fornecidos no corpo da requisição.' });
+    if (!data || !Array.isArray(data)) {
+      return res.status(400).json({ message: 'Formato de dados inválido. Esperado um array.' });
     }
 
     const spreadsheetId = process.env.SPREADSHEET_ID;
 
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: 'A:E',
+      range: 'A:E', // Adaptável ao número de colunas enviadas
       valueInputOption: 'USER_ENTERED',
       requestBody: {
-        values: [body.data],
+        values: [data],
       },
     });
 
