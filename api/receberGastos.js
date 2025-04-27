@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   const { itens } = body;
 
   if (!itens || !Array.isArray(itens)) {
-    return res.status(400).json({ message: 'Formato de dados inválido. Esperado um array de itens.' });
+    return res.status(400).json({ message: 'Formato de dados inválido. Esperado um campo "itens" com um array.' });
   }
 
   try {
