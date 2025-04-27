@@ -5,35 +5,34 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Método não permitido. Use POST.' });
   }
 
-  let body = '';
-
+  let rawBody = '';
+  
   try {
-    // Captura manual dos dados enviados na requisição
-    for await (const chunk of req) {
-      body += chunk;
+    // Lê manualmente o body
+    await new Promise((resolve, reject) => {
+      req.on('data', chunk => {
+        rawBody += chunk.toString();
+      });
+      req.on('end', resolve);
+      req.on('error', reject);
+    });
+
+    const { data } = JSON.parse(rawBody);
+
+    if (!data) {
+      return res.status(400).json({ message: 'Dados não fornecidos no corpo da requisição.' });
     }
 
-    body = JSON.parse(body); // Transforma em objeto
-  } catch (error) {
-    console.error('Erro ao ler/parsing do body:', error);
-    return res.status(400).json({ message: 'Erro ao interpretar o corpo da requisição.', error: error.message });
-  }
-
-  try {
     const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+
+    const scopes = ['https://www.googleapis.com/auth/spreadsheets'];
 
     const auth = new google.auth.GoogleAuth({
       credentials: serviceAccount,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+      scopes: scopes,
     });
 
     const sheets = google.sheets({ version: 'v4', auth });
-
-    const { data } = body;
-
-    if (!data || !Array.isArray(data)) {
-      return res.status(400).json({ message: 'Formato de dados inválido. Esperado um array.' });
-    }
 
     const spreadsheetId = process.env.SPREADSHEET_ID;
 
@@ -49,7 +48,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ message: 'Gasto registrado com sucesso no Google Sheets!' });
 
   } catch (error) {
-    console.error('Erro na função serverless:', error);
+    console.error('Erro:', error);
     return res.status(500).json({ message: 'Erro interno no servidor.', error: error.message });
   }
 }
