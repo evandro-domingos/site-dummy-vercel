@@ -1,5 +1,3 @@
-// api/receberGastos.js
-
 import { google } from 'googleapis';
 
 export default async function handler(req, res) {
@@ -8,10 +6,18 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Parse do corpo da requisição
+    let body = {};
+    try {
+      body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    } catch (error) {
+      return res.status(400).json({ message: "JSON inválido no corpo da requisição." });
+    }
+
+    // Carrega as credenciais do serviço do Google
     const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
 
     const scopes = ['https://www.googleapis.com/auth/spreadsheets'];
-
     const auth = new google.auth.GoogleAuth({
       credentials: serviceAccount,
       scopes: scopes,
@@ -19,9 +25,7 @@ export default async function handler(req, res) {
 
     const sheets = google.sheets({ version: 'v4', auth });
 
-    const { data } = req.body;
-
-    if (!data) {
+    if (!body.data) {
       return res.status(400).json({ message: 'Dados não fornecidos no corpo da requisição.' });
     }
 
@@ -32,7 +36,7 @@ export default async function handler(req, res) {
       range: 'A:E',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
-        values: [data],
+        values: [body.data],
       },
     });
 
