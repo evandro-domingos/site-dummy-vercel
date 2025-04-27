@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+    const serviceAccount = JSON.parse(process.env.GOOGLE_CREDENTIALS);
 
     const auth = new google.auth.GoogleAuth({
       credentials: serviceAccount,
@@ -31,13 +31,13 @@ export default async function handler(req, res) {
 
     const spreadsheetId = process.env.SPREADSHEET_ID;
 
-    // Montar os valores para inserir
+    // Montar as linhas a partir dos itens
     const values = itens.map(item => [
       item.data,
       item.produto,
       item.quantidade,
       item.valor,
-      item.formaPagamento,
+      item.forma_pagamento,
       item.onde
     ]);
 
