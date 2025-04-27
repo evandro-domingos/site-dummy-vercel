@@ -1,3 +1,5 @@
+// api/receberGastos.js
+
 import { google } from 'googleapis';
 
 export default async function handler(req, res) {
@@ -5,42 +7,39 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Método não permitido. Use POST.' });
   }
 
-  const body = req.body;
-
-  if (!body.data || !body.produto || !body.quantidade || !body.valor || !body.formaPagamento || !body.onde) {
-    return res.status(400).json({ message: 'Dados incompletos.' });
-  }
-
   try {
+    const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+
+    const scopes = ['https://www.googleapis.com/auth/spreadsheets'];
+
     const auth = new google.auth.GoogleAuth({
-      credentials: JSON.parse(process.env.GOOGLE_CREDENTIALS),
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+      credentials: serviceAccount,
+      scopes: scopes,
     });
 
     const sheets = google.sheets({ version: 'v4', auth });
+
+    const { data } = req.body;
+
+    if (!data) {
+      return res.status(400).json({ message: 'Dados não fornecidos no corpo da requisição.' });
+    }
+
     const spreadsheetId = process.env.SPREADSHEET_ID;
 
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: 'Gastos!A:F', // A aba Gastos, colunas A até F
+      range: 'A:E',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
-        values: [
-          [
-            body.data,
-            body.produto,
-            body.quantidade,
-            body.valor,
-            body.formaPagamento,
-            body.onde
-          ]
-        ]
-      }
+        values: [data],
+      },
     });
 
-    return res.status(200).json({ message: 'Gasto recebido e adicionado à planilha!' });
+    return res.status(200).json({ message: 'Gasto registrado com sucesso no Google Sheets!' });
+
   } catch (error) {
-    console.error('Erro ao adicionar gasto:', error);
-    return res.status(500).json({ message: 'Erro interno ao adicionar gasto.' });
+    console.error('Erro na função serverless:', error);
+    return res.status(500).json({ message: 'Erro interno no servidor.', error: error.message });
   }
 }
